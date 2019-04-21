@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/mark-ignacio/ledr/agent/filters"
+	"github.com/mark-ignacio/bedr/agent/filters"
 )
 
 func startFilters(ctx context.Context) <-chan filters.ExecveEvent {

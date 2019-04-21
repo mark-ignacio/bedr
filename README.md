@@ -29,13 +29,11 @@ based on: https://github.com/torvalds/linux/blob/master/arch/x86/entry/syscalls/
 
 ### Starting the thing
 
-After all that, cd to `ledr/agent` and run kagent:
-
 ```
-ledr/agent $ sudo -E go run main.go
+bedr/agent $ sudo -E go run main.go
 ```
 
-Unless this becomes a real service, `Ctrl+C` or pkill it.
+If not a real service, `Ctrl+C` or pkill it.
 
 ## About the license
 
