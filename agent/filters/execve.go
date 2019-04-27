@@ -217,7 +217,7 @@ func (e *execveFilter) handleData(eventData []byte) error {
 				},
 			}
 			if arg != "" {
-				event.Args = []string{arg}
+				event.Args = make([]string, 0, 1)
 			}
 		}
 		event.Args = append(event.Args, arg)
