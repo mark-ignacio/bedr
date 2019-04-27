@@ -1,3 +1,4 @@
 .vscode
 */vendor/*/
+/agent/agent
 /agent/filters/test-calls/kitchen-sink

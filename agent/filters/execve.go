@@ -6,7 +6,6 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/iovisor/gobpf/bcc"
 )
@@ -229,8 +228,7 @@ func (e *execveFilter) handleData(eventData []byte) error {
 			log.Printf("Got closing event for unknown PID %d", rawEvent.Pid)
 			return nil
 		}
-		event.Timestamp = time.Unix(0, int64(rawEvent.When)).
-			In(time.UTC)
+		event.Timestamp = ktime2Time(int64(rawEvent.When))
 		e.eventChan <- *event
 	}
 	return nil

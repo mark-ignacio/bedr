@@ -5,21 +5,24 @@
 #include <stdio.h>
 #include <unistd.h>
 
+char *const someArgs[] = {"a", "b", "c", '\0'};
 
-char* const someArgs[] = {"a", "b", "c"}; 
-
-void main() {
-   int pid = fork();
-   if (pid == 0) {
-       execve("/bin/true", someArgs, NULL);
-       return;
-   }
-   #ifdef __NR_execveat
-   pid = fork();
-   if (pid == 0) {
-       return execveat();
-   }
-   #else
-   puts("no execveat :(");
-   #endif
+void main()
+{
+  int pid = fork();
+  if (pid == 0)
+  {
+    puts("execve: /bin/true b c");
+    execve("/bin/true", someArgs, NULL);
+    return;
+  }
+#ifdef __NR_execveat
+  pid = fork();
+  if (pid == 0)
+  {
+    return execveat();
+  }
+#else
+  puts("no execveat :(");
+#endif
 }
