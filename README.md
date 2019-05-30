@@ -11,8 +11,8 @@ based on: https://github.com/torvalds/linux/blob/master/arch/x86/entry/syscalls/
 
 | syscall  | status |
 |----------|--------|
-| open     | ❌      |
-| openat   | ❌      |
+| open     | ✔️      |
+| openat   | ✔️      |
 | execve   | ✔️      |
 | execveat | ❌      |
 | connect  | ❌      |

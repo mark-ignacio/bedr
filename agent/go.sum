@@ -1,2 +1,8 @@
 github.com/iovisor/gobpf v0.0.0-20190202095358-248028b4f94b h1:iRUo/U3WdmTV65obmgs+C5s4or6pvhwo2PDP+0kmy5o=
 github.com/iovisor/gobpf v0.0.0-20190202095358-248028b4f94b/go.mod h1:+5U5qu5UOu8YJ5oHVLvWKH7/Dr5QNHU7mZ2RfPEeXg8=
+github.com/iovisor/gobpf v0.0.0-20190329163444-e0d8d785d368 h1:y3708HMZuw+OpIdFPPzwSMC12f/LncanSCpVAaR8jCY=
+github.com/iovisor/gobpf v0.0.0-20190329163444-e0d8d785d368/go.mod h1:+5U5qu5UOu8YJ5oHVLvWKH7/Dr5QNHU7mZ2RfPEeXg8=
+golang.org/x/sys v0.0.0-20190426135247-a129542de9ae h1:mQLHiymj/JXKnnjc62tb7nD5pZLs940/sXJu+Xp3DBA=
+golang.org/x/sys v0.0.0-20190426135247-a129542de9ae/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20190602015325-4c4f7f33c9ed h1:uPxWBzB3+mlnjy9W58qY1j/cjyFjutgw/Vhan2zLy/A=
+golang.org/x/sys v0.0.0-20190602015325-4c4f7f33c9ed/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=

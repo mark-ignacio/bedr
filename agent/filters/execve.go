@@ -1,7 +1,6 @@
 package filters
 
 import (
-	"bytes"
 	"context"
 	"log"
 	"strconv"
@@ -129,7 +128,7 @@ type rawExecveEvent struct {
 	Ppid   uint64
 	When   uint64
 	Comm   [16]byte
-	Type   int32
+	Type   rawEventType
 	Argv   [128]byte
 	RetVal int32
 }
@@ -143,13 +142,6 @@ type execveFilter struct {
 	pending map[uint64]*ExecveEvent
 }
 
-type rawExecveEventType int32
-
-const (
-	execveEventArg rawExecveEventType = iota
-	execveEventRet
-)
-
 func (e *execveFilter) Listen(ctx context.Context) error {
 	e.module = bcc.NewModule(
 		strings.Replace(
@@ -159,23 +151,18 @@ func (e *execveFilter) Listen(ctx context.Context) error {
 		),
 		[]string{},
 	)
-	err := loadAttachTracepoints(
+	dataChan, perfMap, err := genericListen(
+		e.module,
 		map[string]string{
 			"trace_sys_enter_execve": "syscalls:sys_enter_execve",
 			"trace_sys_exit_execve":  "syscalls:sys_exit_execve",
 		},
-		e.module,
+		"events",
 	)
 	if err != nil {
 		return err
 	}
 	e.attached = true
-	table := bcc.NewTable(e.module.TableId("events"), e.module)
-	dataChan := make(chan []byte, 100)
-	perfMap, err := bcc.InitPerfMap(table, dataChan)
-	if err != nil {
-		return err
-	}
 	// auto-close when the context dies
 	go func() {
 		var eventData []byte
@@ -203,15 +190,15 @@ func (e *execveFilter) handleData(eventData []byte) error {
 	if err != nil {
 		return err
 	}
-	switch rawExecveEventType(rawEvent.Type) {
-	case execveEventArg:
+	switch rawEventType(rawEvent.Type) {
+	case rawEventEnter:
 		event, exists := e.pending[rawEvent.Pid]
 		arg := c2string(rawEvent.Argv[:])
 		if !exists {
 			event = &ExecveEvent{
 				PPID: rawEvent.Ppid,
 				PacketFilterEvent: PacketFilterEvent{
-					PID:  rawEvent.Pid,
+					PID:  uint32(rawEvent.Pid),
 					Comm: c2string(rawEvent.Comm[:]),
 				},
 			}
@@ -221,7 +208,7 @@ func (e *execveFilter) handleData(eventData []byte) error {
 		}
 		event.Args = append(event.Args, arg)
 		e.pending[rawEvent.Pid] = event
-	case execveEventRet:
+	case rawEventExit:
 		event, exists := e.pending[rawEvent.Pid]
 		defer delete(e.pending, rawEvent.Pid)
 		if !exists {
@@ -240,14 +227,6 @@ func (e *execveFilter) Attached() bool {
 
 func (e *execveFilter) Syscalls() []string {
 	return []string{"exec"}
-}
-
-func c2string(argv []byte) string {
-	length := bytes.IndexByte(argv, '\x00')
-	if length == -1 {
-		return ""
-	}
-	return string(argv[:length])
 }
 
 // NewExecVEFilter creates one.

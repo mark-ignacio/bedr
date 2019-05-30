@@ -20,10 +20,19 @@ type PacketFilter interface {
 
 // PacketFilterEvent is (generally) what all BPF event structs should embed, for interop's sake.
 type PacketFilterEvent struct {
-	PID       uint64
+	PID       uint32
+	UID       uint32
 	Timestamp time.Time
 	Comm      string
+	Ret       uint64
 }
+
+type rawEventType int32
+
+const (
+	rawEventEnter rawEventType = iota
+	rawEventExit
+)
 
 func loadAttachTracepoints(tp2attach map[string]string, module *bcc.Module) error {
 	var err error
