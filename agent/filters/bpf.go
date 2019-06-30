@@ -14,8 +14,6 @@ type PacketFilter interface {
 	Listen(ctx context.Context) error
 	// Attached returns whether the tracepoint/whatever is attached
 	Attached() bool
-	// Syscalls returns what syscalls this filter covers, which is also a guide to what events are available from the channel.
-	Syscalls() []string
 }
 
 // PacketFilterEvent is (generally) what all BPF event structs should embed, for interop's sake.

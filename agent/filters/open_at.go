@@ -229,10 +229,6 @@ func (o *openFilter) Attached() bool {
 	return o.attached
 }
 
-func (o *openFilter) Syscalls() []string {
-	return []string{"open", "openat"}
-}
-
 // TODO: func (o *openFilter) PIDExit()
 
 // NewOpenFilter creates one.

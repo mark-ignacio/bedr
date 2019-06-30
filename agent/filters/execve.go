@@ -225,10 +225,6 @@ func (e *execveFilter) Attached() bool {
 	return e.attached
 }
 
-func (e *execveFilter) Syscalls() []string {
-	return []string{"exec"}
-}
-
 // NewExecVEFilter creates one.
 func NewExecVEFilter(
 	eventChan chan<- ExecveEvent,
