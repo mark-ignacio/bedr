@@ -2,11 +2,11 @@
 
 an experimental, BPF-powered Linux EDR. Ships syscall info into a TCP socket for central collection and data crunching.
 
-In order to work on machines with [kernel_lockdown](https://lwn.net/Articles/735564/) enabled, kprobes are forbidden for features that hope for wide adoption.
+In order to work on machines with the future, read-only [kernel_lockdown](https://lwn.net/Articles/751561/) mode enabled, kprobes are forbidden for features that hope for wide adoption.
 
 ## syscall coverage
 
-based on: https://github.com/torvalds/linux/blob/master/arch/x86/entry/syscalls/syscall_64.tbl
+based on: [/arch/x86/entry/syscalls/syscall_64.tbl](https://github.com/torvalds/linux/blob/9c8ad7a2ff0bfe58f019ec0abc1fb965114dde7d/arch/x86/entry/syscalls/syscall_64.tbl)
 
 
 | syscall  | status |
@@ -24,7 +24,8 @@ based on: https://github.com/torvalds/linux/blob/master/arch/x86/entry/syscalls/
 ### Requirements
 
 * For building, Go 1.11+ because of go modules
-* [Linux kernel 4.7+](https://github.com/iovisor/bcc/blob/master/docs/kernel-versions.md) for kernel tracepoint support
+* [Linux kernel 4.7+](https://github.com/iovisor/bcc/blob/8835de693babc7c8c039209dab914c11d2182d24/docs/kernel-versions.md) for kernel tracepoint support
+* [kernel lockdown mode](https://lwn.net/Articles/751561/) disabled
 * `bcc` (Debian) or `bcc-devel` (Fedora) for JIT filter compliation.
 
 ### Starting the thing
