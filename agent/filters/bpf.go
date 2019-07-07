@@ -2,6 +2,7 @@ package filters
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -32,8 +33,20 @@ const (
 	rawEventExit
 )
 
-func loadAttachTracepoints(tp2attach map[string]string, module *bcc.Module) error {
-	var err error
+func loadAttachTracepoints(tp2attach map[string]string, module *bcc.Module) (err error) {
+	defer func() {
+		// bcc panics when it can't get to something, but we probably want to back off more nicely
+		if r := recover(); r != nil {
+			var isErr bool
+			recovered, isErr := r.(error)
+			if isErr {
+				err = recovered
+			} else {
+				err = fmt.Errorf("loadAttachTracepoints recovered a panic: %+v", err)
+			}
+			return
+		}
+	}()
 	loaded := make(map[string]int)
 	for tpName, attachName := range tp2attach {
 		tracepoint, exists := loaded[tpName]
@@ -41,14 +54,14 @@ func loadAttachTracepoints(tp2attach map[string]string, module *bcc.Module) erro
 			tracepoint, err = module.LoadTracepoint(tpName)
 			if err != nil {
 				log.Printf("Unable to load tracepoint %s: %s", tpName, err)
-				return err
+				return
 			}
 			loaded[tpName] = tracepoint
 		}
 		err = module.AttachTracepoint(attachName, tracepoint)
 		if err != nil {
 			log.Printf("Unable to attach tracepoint %s to %s: %s", tpName, attachName, err)
-			return err
+			return
 		}
 	}
 	return nil
