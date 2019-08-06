@@ -2,3 +2,6 @@
 */vendor/*/
 /agent/agent
 /agent/filters/test-calls/kitchen-sink
+# test key/certificate
+/server/*.key
+/server/*.pem
