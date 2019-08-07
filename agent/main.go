@@ -13,12 +13,8 @@ import (
 	"github.com/mark-ignacio/bedr/agent/output"
 )
 
-func startFilters(ctx context.Context) (
-	<-chan filters.ExecveEvent,
-	<-chan filters.OpenEvent,
-) {
+func listenExecve(ctx context.Context) <-chan filters.ExecveEvent {
 	execveChan := make(chan filters.ExecveEvent, 1000)
-	openChan := make(chan filters.OpenEvent, 1000)
 	execbpf, err := filters.NewExecVEFilter(execveChan, 20)
 	if err != nil {
 		log.Panicf("error creating ExecVEFilter: %s", err)
@@ -28,24 +24,67 @@ func startFilters(ctx context.Context) (
 	if err != nil {
 		log.Panicf("error listening ExecVEFilter: %s", err)
 	}
-	// openbpf, err := filters.NewOpenFilter(openChan)
-	// if err != nil {
-	// 	log.Panicf("error creating OpenFilter: %s", err)
-	// }
-	// err = openbpf.Listen(ctx)
-	// if err != nil {
-	// 	log.Panicf("error listening to OpenFilter: %s", err)
-	// }
-	return execveChan, openChan
+	return execveChan
+}
+
+func listenOpen(ctx context.Context) <-chan filters.OpenEvent {
+	openChan := make(chan filters.OpenEvent, 1000)
+	openbpf, err := filters.NewOpenFilter(openChan)
+	if err != nil {
+		log.Panicf("error creating OpenFilter: %s", err)
+	}
+	err = openbpf.Listen(ctx)
+	if err != nil {
+		log.Panicf("error listening to OpenFilter: %s", err)
+	}
+	return openChan
+}
+
+func listenConnect(ctx context.Context) <-chan filters.ConnectEvent {
+	connectChan := make(chan filters.ConnectEvent, 1000)
+	openbpf, err := filters.NewConnectFilter(connectChan)
+	if err != nil {
+		log.Panicf("error creating ConnectFilter: %s", err)
+	}
+	err = openbpf.Listen(ctx)
+	if err != nil {
+		log.Panicf("error listening to ConnectFilter: %s", err)
+	}
+	return connectChan
+}
+
+func startFilters(ctx context.Context, only string) (
+	execveChan <-chan filters.ExecveEvent,
+	openChan <-chan filters.OpenEvent,
+	connectChan <-chan filters.ConnectEvent,
+) {
+	log.Printf("only: %s", only)
+	switch only {
+	case "execve":
+		execveChan = listenExecve(ctx)
+	case "open":
+		openChan = listenOpen(ctx)
+	case "connect":
+		connectChan = listenConnect(ctx)
+	case "":
+		execveChan = listenExecve(ctx)
+		openChan = listenOpen(ctx)
+		connectChan = listenConnect(ctx)
+	default:
+		log.Fatalf("unknown 'only' option: '%s'", only)
+	}
+	return
 }
 
 func main() {
 	flagFlush := flag.Int("flush", 100, "max flush/heartbeat threshold")
-	flagStdout := flag.Bool("stdout", true, "toggle stdout output")
+	flagStdout := flag.Bool("stdout", false, "toggle stdout output")
+	flagOnly := flag.String("only", "", "only listen to a certain syscall")
+	flag.Parse()
 	// start it all up
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
-	execves, opens := startFilters(ctx)
+	execves, opens, connects := startFilters(ctx, *flagOnly)
 	var (
 		feedFunc      output.FeedFunc
 		heartbeatFunc output.HeartbeatFunc
@@ -68,6 +107,8 @@ func main() {
 				feedFunc(&execve)
 			case open := <-opens:
 				feedFunc(&open)
+			case connect := <-connects:
+				feedFunc(&connect)
 			case <-lubDub.C:
 				heartbeatFunc()
 			}

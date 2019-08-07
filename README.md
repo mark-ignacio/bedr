@@ -15,7 +15,8 @@ based on: [/arch/x86/entry/syscalls/syscall_64.tbl](https://github.com/torvalds/
 | openat   | ✔️      |
 | execve   | ✔️      |
 | execveat | ❌      |
-| connect  | ❌      |
+| connect  | ✔️      |
+| sendmsg  | ❌      |
 | bind     | ❌      |
 
 
