@@ -40,8 +40,21 @@ func listenOpen(ctx context.Context) <-chan filters.OpenEvent {
 	return openChan
 }
 
-func listenConnect(ctx context.Context) <-chan filters.ConnectEvent {
-	connectChan := make(chan filters.ConnectEvent, 1000)
+func listenBind(ctx context.Context) <-chan filters.BindConnectEvent {
+	bindChan := make(chan filters.BindConnectEvent, 1000)
+	openbpf, err := filters.NewBindFilter(bindChan)
+	if err != nil {
+		log.Panicf("error creating ConnectFilter: %s", err)
+	}
+	err = openbpf.Listen(ctx)
+	if err != nil {
+		log.Panicf("error listening to ConnectFilter: %s", err)
+	}
+	return bindChan
+}
+
+func listenConnect(ctx context.Context) <-chan filters.BindConnectEvent {
+	connectChan := make(chan filters.BindConnectEvent, 1000)
 	openbpf, err := filters.NewConnectFilter(connectChan)
 	if err != nil {
 		log.Panicf("error creating ConnectFilter: %s", err)
@@ -56,7 +69,8 @@ func listenConnect(ctx context.Context) <-chan filters.ConnectEvent {
 func startFilters(ctx context.Context, only string) (
 	execveChan <-chan filters.ExecveEvent,
 	openChan <-chan filters.OpenEvent,
-	connectChan <-chan filters.ConnectEvent,
+	bindChan <-chan filters.BindConnectEvent,
+	connectChan <-chan filters.BindConnectEvent,
 ) {
 	log.Printf("only: %s", only)
 	switch only {
@@ -66,6 +80,8 @@ func startFilters(ctx context.Context, only string) (
 		openChan = listenOpen(ctx)
 	case "connect":
 		connectChan = listenConnect(ctx)
+	case "bind":
+		bindChan = listenBind(ctx)
 	case "":
 		execveChan = listenExecve(ctx)
 		openChan = listenOpen(ctx)
@@ -84,7 +100,7 @@ func main() {
 	// start it all up
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
-	execves, opens, connects := startFilters(ctx, *flagOnly)
+	execves, opens, binds, connects := startFilters(ctx, *flagOnly)
 	var (
 		feedFunc      output.FeedFunc
 		heartbeatFunc output.HeartbeatFunc
@@ -109,6 +125,8 @@ func main() {
 				feedFunc(&open)
 			case connect := <-connects:
 				feedFunc(&connect)
+			case bind := <-binds:
+				feedFunc(&bind)
 			case <-lubDub.C:
 				heartbeatFunc()
 			}

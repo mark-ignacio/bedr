@@ -17,7 +17,7 @@ based on: [/arch/x86/entry/syscalls/syscall_64.tbl](https://github.com/torvalds/
 | execveat | ❌      |
 | connect  | ✔️      |
 | sendmsg  | ❌      |
-| bind     | ❌      |
+| bind     | ✔️      |
 
 
 ## Usage

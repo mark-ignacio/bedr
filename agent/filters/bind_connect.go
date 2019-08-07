@@ -9,7 +9,8 @@ import (
 	"github.com/iovisor/gobpf/bcc"
 )
 
-const connectSource = `
+// turns out that connect and bind are the same call if you squint hard enough
+const bindConnectSource = `
 #include <net/sock.h>
 #include <linux/sched.h>
 
@@ -87,11 +88,12 @@ int trace_sys_exit_connect(struct sys_exit_connect_args *args) {
 }
 `
 
-// ConnectEvent describes a socket connection initiation
-type ConnectEvent struct {
+// BindConnectEvent describes a socket connection initiation
+type BindConnectEvent struct {
 	PacketFilterEvent
-	IP   net.IP
-	Port uint16
+	IP     net.IP
+	Port   uint16
+	IsBind bool
 }
 
 type rawConnectEvent struct {
@@ -104,20 +106,19 @@ type rawConnectEvent struct {
 	DAddr  [16]byte
 }
 
-type connectFilter struct {
-	attached  bool
-	module    *bcc.Module
-	eventChan chan<- ConnectEvent
+type bindConnectFilter struct {
+	attached    bool
+	isBind      bool
+	module      *bcc.Module
+	eventChan   chan<- BindConnectEvent
+	attachments map[string]string
 }
 
-func (c *connectFilter) Listen(ctx context.Context) error {
-	c.module = bcc.NewModule(connectSource, []string{})
+func (c *bindConnectFilter) Listen(ctx context.Context) error {
+	c.module = bcc.NewModule(bindConnectSource, []string{})
 	dataChan, perfMap, err := genericListen(
 		c.module,
-		map[string]string{
-			"trace_sys_enter_connect": "syscalls:sys_enter_connect",
-			"trace_sys_exit_connect":  "syscalls:sys_exit_connect",
-		},
+		c.attachments,
 		"events",
 	)
 	if err != nil {
@@ -142,7 +143,8 @@ func (c *connectFilter) Listen(ctx context.Context) error {
 	}()
 	return nil
 }
-func (c *connectFilter) handleData(eventData []byte) error {
+
+func (c *bindConnectFilter) handleData(eventData []byte) error {
 	var raw rawConnectEvent
 	err := readPerfEvent(eventData, &raw)
 	if err != nil {
@@ -157,27 +159,44 @@ func (c *connectFilter) handleData(eventData []byte) error {
 	default:
 		log.Panicf("unhandled sa_family %d", raw.Family)
 	}
-	event := ConnectEvent{
+	event := BindConnectEvent{
 		PacketFilterEvent: PacketFilterEvent{
 			PID:       raw.PID,
 			UID:       raw.UID,
 			Timestamp: ktime2Time(int64(raw.When)),
 			Comm:      c2string(raw.Comm[:]),
 		},
-		IP:   ip,
-		Port: raw.DPort,
+		IP:     ip,
+		Port:   raw.DPort,
+		IsBind: c.isBind,
 	}
 	c.eventChan <- event
 	return nil
 }
 
-func (c connectFilter) Attached() bool {
+func (c bindConnectFilter) Attached() bool {
 	return c.attached
 }
 
-// NewConnectFilter creates one.
-func NewConnectFilter(eventChan chan<- ConnectEvent) (PacketFilter, error) {
-	return &connectFilter{
+// NewConnectFilter creates one for connect().
+func NewConnectFilter(eventChan chan<- BindConnectEvent) (PacketFilter, error) {
+	return &bindConnectFilter{
 		eventChan: eventChan,
+		attachments: map[string]string{
+			"trace_sys_enter_connect": "syscalls:sys_enter_connect",
+			"trace_sys_exit_connect":  "syscalls:sys_exit_connect",
+		},
+	}, nil
+}
+
+// NewBindFilter creates one for bind().
+func NewBindFilter(eventChan chan<- BindConnectEvent) (PacketFilter, error) {
+	return &bindConnectFilter{
+		eventChan: eventChan,
+		attachments: map[string]string{
+			"trace_sys_enter_connect": "syscalls:sys_enter_bind",
+			"trace_sys_exit_connect":  "syscalls:sys_exit_bind",
+		},
+		isBind: true,
 	}, nil
 }
